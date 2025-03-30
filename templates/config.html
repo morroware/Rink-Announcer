@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rink Announcement System | Configuration</title>
+    <!-- Normalize CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main CSS file -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fa-solid fa-volume-high"></i>
+                    <span>RinkAnnounce</span>
+                </div>
+                <button class="mobile-toggle" id="sidebarToggle">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+            <div class="sidebar-content">
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="#dashboard" class="nav-link active">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#day-config" class="nav-link">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            <span>Day Configuration</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+    <a href="#ini-editor" class="nav-link">
+        <i class="fa-solid fa-file-code"></i>
+        <span>INI Editor</span>
+    </a>
+</li>
+                    <li class="nav-item">
+                        <a href="#instant" class="nav-link">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>Instant Announcement</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#schedule" class="nav-link">
+                            <i class="fa-solid fa-clock"></i>
+                            <span>Schedule</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#templates" class="nav-link">
+                            <i class="fa-solid fa-microphone"></i>
+                            <span>Announcements</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#custom" class="nav-link">
+                            <i class="fa-solid fa-sliders"></i>
+                            <span>Custom Types</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#settings" class="nav-link">
+                            <i class="fa-solid fa-gear"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="sidebar-footer">
+                <div id="clock" class="clock">Loading...</div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="main-header">
+                <h1>Rink Announcement System</h1>
+                <div class="user-actions">
+                    <button type="button" class="btn btn-primary" id="saveConfigBtn" form="configForm">
+                        <i class="fa-solid fa-floppy-disk"></i> Save All Changes
+                    </button>
+                </div>
+            </header>
+
+            <!-- Flash Messages -->
+            <div class="flash-container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                {% if category == 'success' %}
+                                <i class="fa-solid fa-circle-check"></i>
+                                {% elif category == 'error' %}
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                {% elif category == 'warning' %}
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                {% else %}
+                                <i class="fa-solid fa-circle-info"></i>
+                                {% endif %}
+                                {{ message }}
+                                <button class="alert-close">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- Form Container -->
+            <form id="configForm" method="POST" action="{{ url_for('save_config') }}">
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="content-section">
+                    <div class="section-header">
+                        <h2>Dashboard</h2>
+                    </div>
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card active-config">
+                            <div class="card-icon">
+                                <i class="fa-solid fa-calendar-day"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3>Active Configuration</h3>
+                                <p id="activeConfig">{{ current_config }}</p>
+                                <div class="status-badge {% if day_configs.current_day.is_operating_day %}status-active{% else %}status-inactive{% endif %}">
+                                    <span id="configStatus">{% if day_configs.current_day.is_operating_day %}Operating Day{% else %}Non-Operating Day{% endif %}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-card current-day">
+                            <div class="card-icon">
+                                <i class="fa-solid fa-calendar-week"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3>Current Day</h3>
+                                <p id="currentDay" class="highlight">{{ day_configs.current_day.day_name }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-card upcoming">
+                            <div class="card-icon">
+                                <i class="fa-solid fa-bullhorn"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3>Upcoming Announcements</h3>
+                                <div class="upcoming-list" id="upcomingList">
+                                    <div class="upcoming-item empty">
+                                        <span class="type">Loading announcements...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+
+                <!-- Instant Announcement -->
+                <section id="instant" class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-bolt"></i> Instant Announcement</h2>
+                    </div>
+                    <div class="card-grid">
+                        <div class="config-card full-width">
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label" for="instantText">Announcement Text</label>
+                                    <textarea class="form-control" id="instantText" rows="3" placeholder="Enter announcement text..."></textarea>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-accent" id="playInstantBtn">
+                                        <i class="fa-solid fa-play"></i> Play Announcement
+                                    </button>
+                                    <span id="instantStatus" class="status-message"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Schedule Section -->
+                <section id="schedule" class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-clock"></i> Announcement Schedule</h2>
+                    </div>
+                    <div class="card-grid">
+                        <div class="config-card">
+                            <div class="card-header">
+                                <h3>Add New Announcement</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="time-input-row">
+                                    <div class="form-group">
+                                        <label class="form-label" for="newTime">Time</label>
+                                        <input type="time" class="form-control time-picker" id="newTime" value="12:00">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="newType">Type</label>
+                                        <select class="form-control type-select" id="newType">
+                                            <option value="hour">Hour Change</option>
+                                            <option value=":55">Color Warning</option>
+                                            <option value="rules">Rules</option>
+                                            <option value="ad">Advertisement</option>
+                                        </select>
+                                    </div>
+                                    <button type="button" class="btn btn-primary" id="addTimeBtn">
+                                        <i class="fa-solid fa-plus"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <div class="card-header">
+                                <h3>Current Schedule</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="schedule-list" id="scheduleList"></div>
+                                <textarea class="form-control hidden" id="times" name="times" required>{{ times }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Templates Section -->
+                <section id="templates" class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-microphone"></i> Announcements</h2>
+                    </div>
+                    <div class="card-grid">
+                        <div class="config-card full-width">
+                            <div class="card-body">
+                                <div class="tabs">
+                                    <div class="tab-header">
+                                        <button type="button" class="tab-btn active" data-tab="hour">Hour Change</button>
+                                        <button type="button" class="tab-btn" data-tab="fiftyfive">Color Warning</button>
+                                        <button type="button" class="tab-btn" data-tab="rules">Rules</button>
+                                        <button type="button" class="tab-btn" data-tab="ad">Advertisement</button>
+                                    </div>
+                                    <div class="tab-content">
+                                        <div class="tab-pane active" id="hour-tab">
+                                            <div class="form-group">
+                                                <label class="form-label" for="hour_template">Hour Change Template</label>
+                                                <textarea class="form-control" id="hour_template" name="hour_template" rows="3" required>{{ announcements.hour }}</textarea>
+                                                <div class="template-help">
+                                                    <p>Variables: <code>{time}</code>, <code>{color1}</code>, <code>{color2}</code>, <code>{color3}</code>, <code>{color4}</code></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="tab-pane" id="fiftyfive-tab">
+                                            <div class="form-group">
+                                                <label class="form-label" for="fiftyfive_template">Color Warning Template</label>
+                                                <textarea class="form-control" id="fiftyfive_template" name="fiftyfive_template" rows="3" required>{{ announcements.fiftyfive }}</textarea>
+                                                <div class="template-help">
+                                                    <p>Variables: <code>{time}</code>, <code>{color1}</code>, <code>{color2}</code>, <code>{color3}</code>, <code>{color4}</code></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="tab-pane" id="rules-tab">
+                                            <div class="form-group">
+                                                <label class="form-label" for="rules_template">Rules Template</label>
+                                                <textarea class="form-control" id="rules_template" name="rules_template" rows="3" required>{{ announcements.rules }}</textarea>
+                                            </div>
+                                        </div>
+                                        <div class="tab-pane" id="ad-tab">
+                                            <div class="form-group">
+                                                <label class="form-label" for="ad_template">Advertisement Template</label>
+                                                <textarea class="form-control" id="ad_template" name="ad_template" rows="3" required>{{ announcements.ad }}</textarea>
+                                                <div class="template-help">
+                                                    <p>Variables: <code>{color1}</code>, <code>{color2}</code>, <code>{color3}</code>, <code>{color4}</code></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Custom Types Section -->
+                <section id="custom" class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-sliders"></i> Custom Announcement Types</h2>
+                    </div>
+                    <div class="card-grid">
+                        <div class="config-card">
+                            <div class="card-header">
+                                <h3>Add Custom Type</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="custom-type-input-row">
+                                    <div class="form-group">
+                                        <label class="form-label" for="newTypeName">Type Name</label>
+                                        <input type="text" class="form-control" id="newTypeName" placeholder="e.g., 'closing', 'special'">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="newTypeTemplate">Template</label>
+                                        <textarea class="form-control" id="newTypeTemplate" placeholder="Announcement template..." rows="3"></textarea>
+                                    </div>
+                                    <button type="button" class="btn btn-primary" id="addTypeBtn">
+                                        <i class="fa-solid fa-plus"></i> Add Type
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <div class="card-header">
+                                <h3>Current Custom Types</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="customTypesList" class="custom-types-list"></div>
+                                <textarea id="customTypes" name="customTypes" class="hidden">{{ custom_types }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+<section id="ini-editor" class="content-section">
+    <div class="section-header">
+        <h2><i class="fa-solid fa-file-code"></i> INI File Editor</h2>
+    </div>
+    <div class="card-grid">
+        <div class="config-card">
+            <div class="card-header">
+                <h3>Select Configuration File</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label" for="iniFileSelector">Configuration File</label>
+                    <select class="form-control" id="iniFileSelector">
+                        <option value="thurs.ini">Thursday (thurs.ini)</option>
+                        <option value="fri.ini">Friday (fri.ini)</option>
+                        <option value="sat.ini">Saturday (sat.ini)</option>
+                        <option value="sun.ini">Sunday (sun.ini)</option>
+                        <option value="config.ini">Default (config.ini)</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" id="loadIniBtn">
+                        <i class="fa-solid fa-file-import"></i> Load File
+                    </button>
+                    <span id="loadIniStatus" class="status-message"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="config-card full-width">
+            <div class="card-header">
+                <h3>Edit INI File</h3>
+                <div id="currentIniFile">No file loaded</div>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label" for="iniContent">Configuration Content</label>
+                    <textarea class="form-control code-editor" id="iniContent" rows="20" placeholder="INI file content will appear here..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" id="saveIniBtn">
+                        <i class="fa-solid fa-save"></i> Save Changes
+                    </button>
+                    <span id="saveIniStatus" class="status-message"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+                <!-- Settings Section -->
+                <section id="settings" class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-gear"></i> System Settings</h2>
+                    </div>
+                    <div class="card-grid">
+                        <div class="config-card">
+                            <div class="card-header">
+                                <h3>Voice Settings</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label" for="voice_id">Voice ID</label>
+                                    <input type="text" class="form-control" id="voice_id" name="voice_id" value="{{ tts.voice_id }}" required>
+                                    <div class="form-help">
+                                        <p>Standard voices: en-US-GuyNeural, en-US-JennyNeural, en-US-AriaNeural</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <div class="card-header">
+                                <h3>Database Settings</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label" for="db_server">Server</label>
+                                    <input type="text" class="form-control" id="db_server" name="db_server" value="{{ database.server }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="db_name">Database Name</label>
+                                    <input type="text" class="form-control" id="db_name" name="db_name" value="{{ database.database }}" required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label" for="db_username">Username</label>
+                                        <input type="text" class="form-control" id="db_username" name="db_username" value="{{ database.username }}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="db_password">Password</label>
+                                        <div class="password-field">
+                                            <input type="password" class="form-control" id="db_password" name="db_password" value="{{ database.password }}" required>
+                                            <button type="button" class="password-toggle">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </form>
+        </main>
+    </div>
+
+    <!-- Main JS file -->
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>

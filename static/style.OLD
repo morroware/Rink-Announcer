@@ -1,0 +1,765 @@
+/* Root Variables */
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --success: #059669;
+    --danger: #dc2626;
+    --warning: #d97706;
+
+    --background: #1f2937;
+    --surface: #2d3748;
+    --surface-hover: #3b495a;
+
+    --text: #f7fafc;
+    --text-secondary: #a0aec0;
+    --border: #4a5568;
+
+    --space-1: 0.5rem;
+    --space-2: 1rem;
+    --space-3: 1.5rem;
+    --space-4: 2rem;
+    --space-5: 2.5rem;
+    --transition: 0.3s ease-in-out;
+
+    --scrollbar-width: 8px;
+    --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.4);
+    --border-radius: 8px;
+
+    --item-background: #374151;
+}
+
+body {
+    background: linear-gradient(to bottom right, var(--background), #202c3a);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    min-height: 100vh;
+    padding: var(--space-4);
+    box-sizing: border-box;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-4);
+}
+
+/* Header Styles */
+.header {
+    margin-bottom: var(--space-5);
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: var(--space-3);
+    background: linear-gradient(to right, rgba(37, 99, 235, 0.1), transparent);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+/* Quick Navigation Menu Styles */
+.quick-nav {
+    background-color: #1a1a1a;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    border: 1px solid #333;
+}
+
+.quick-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.quick-nav li {
+    margin: 0;
+}
+
+.quick-nav a {
+    text-decoration: none;
+    color: #e0e0e0;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    background-color: #2d2d2d;
+    border: 1px solid #404040;
+    transition: all 0.2s ease;
+}
+
+.quick-nav a:hover {
+    background-color: #404040;
+    color: #ffffff;
+    border-color: #505050;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.quick-nav a:active {
+    transform: translateY(1px);
+    box-shadow: none;
+}
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding: var(--space-4);
+}
+
+.header h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    white-space: nowrap;
+}
+
+.header h1::before {
+    content: '🔔';
+    font-size: 2rem;
+}
+
+.clock {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text);
+    font-family: 'Courier New', Courier, monospace;
+    background: rgba(255, 255, 255, 0.1);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--border-radius);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+/* Add these to your style.css file */
+
+/* Ensure cards are visible by default */
+.card .card-content {
+    max-height: none;
+    opacity: 1;
+    transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+/* Only collapse when the collapsed class is present */
+.card.collapsed .card-content {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+/* Ensure the clock is visible */
+.clock {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    min-width: 150px;
+    text-align: center;
+}
+
+/* Make sure upcoming announcements are visible */
+.upcoming-list {
+    min-height: 50px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Style for empty states */
+.upcoming-item.empty {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 1rem;
+}
+/* Card Styles */
+.card {
+    background-color: var(--surface);
+    border-radius: var(--border-radius);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+    border: 1px solid var(--border);
+    transition: transform var(--transition), box-shadow var(--transition);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+
+.card h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 1.5rem;
+    margin-bottom: var(--space-4);
+    font-weight: 600;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+
+.card-content {
+    /* Remove any max-height or overflow properties that might hide content */
+    display: block;
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Only apply collapse properties when the collapsed class is explicitly set */
+.card.collapsed .card-content {
+    display: none;
+    opacity: 0;
+}
+
+/* Ensure the clock is always visible */
+.clock {
+    display: inline-block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    padding: var(--space-2) var(--space-3);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius);
+}
+
+/* The section after Card Styles remains unchanged */
+
+/* Form Elements */
+.form-group {
+    margin-bottom: var(--space-4);
+}
+
+.form-label {
+    display: block;
+    margin-bottom: var(--space-2);
+    color: var(--text);
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    background-color: var(--surface-hover);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    color: var(--text);
+    font-size: 1rem;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.form-control:hover {
+    border-color: var(--primary);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+}
+/* Add after your existing .form-control styles */
+.form-control {
+    max-width: 100%; /* Ensures fields don't overflow */
+    box-sizing: border-box; /* Includes padding in width calculation */
+}
+
+/* Add after your .card-content styles */
+.card-content {
+    overflow: hidden; /* Ensures no content spills out */
+    padding: var(--space-4);
+}
+
+/* Add to your existing .custom-type-input-row styles */
+.custom-type-input-row {
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Add to your time-input-row styles */
+.time-input-row {
+    width: 100%;
+    max-width: 100%;
+}
+@media (max-width: 768px) {
+    .custom-type-input-row {
+        flex-direction: column;
+    }
+
+    .custom-type-input-row .form-control {
+        width: 100%;
+    }
+
+    .time-input-row {
+        flex-direction: column;
+    }
+
+    .time-input-row .form-control {
+        width: 100%;
+    }
+}
+/* Schedule Editor */
+.schedule-editor {
+    background-color: var(--surface);
+    border-radius: var(--border-radius);
+    padding: var(--space-3);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.time-input-row {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.time-picker {
+    flex: 1 1 150px;
+}
+
+.type-select {
+    flex: 2 1 200px;
+}
+
+/* Button Styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: box-shadow var(--transition), background-color var(--transition);
+    text-align: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+    box-shadow: 0 2px 6px rgba(37,99,235,0.4);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    box-shadow: 0 4px 12px rgba(37,99,235,0.6);
+}
+
+.btn-icon {
+    padding: var(--space-1) var(--space-1);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color var(--transition), background-color var(--transition);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon:hover {
+    color: var(--danger);
+    background-color: rgba(220, 38, 38, 0.1);
+}
+
+/* Lists */
+.schedule-list, .custom-types-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-height: 500px;
+    overflow-y: auto;
+    padding: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    background-color: var(--surface-hover);
+}
+
+.upcoming-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    overflow-y: auto;
+    padding: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    background-color: var(--surface-hover);
+}
+
+/* Scrollbar */
+.schedule-list::-webkit-scrollbar,
+.custom-types-list::-webkit-scrollbar,
+.upcoming-list::-webkit-scrollbar {
+    width: var(--scrollbar-width);
+}
+
+.schedule-list::-webkit-scrollbar-thumb,
+.custom-types-list::-webkit-scrollbar-thumb,
+.upcoming-list::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+
+.schedule-list::-webkit-scrollbar-thumb:hover,
+.custom-types-list::-webkit-scrollbar-thumb:hover,
+.upcoming-list::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+}
+
+.schedule-item, .upcoming-item, .custom-type-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-2);
+    background-color: var(--item-background);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary);
+    transition: transform var(--transition), background-color var(--transition);
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.schedule-item:hover, .upcoming-item:hover, .custom-type-item:hover {
+    transform: translateX(2px);
+    background-color: var(--surface);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.schedule-item .time, .upcoming-item .time {
+    font-weight: 600;
+    min-width: 90px;
+    color: var(--text);
+    font-size: 1rem;
+}
+
+.schedule-item .type, .upcoming-item .type {
+    color: var(--text-secondary);
+    flex: 1;
+    font-size: 1rem;
+    margin-right: var(--space-2);
+}
+
+.upcoming-item .countdown {
+    color: var(--text-secondary);
+    margin-left: auto;
+    padding-left: var(--space-3);
+    white-space: nowrap;
+    font-size: 0.95rem;
+}
+
+.schedule-item .actions, .custom-type-item .actions {
+    display: flex;
+    gap: var(--space-2);
+    margin-left: auto;
+}
+
+/* Item Type Colors */
+.schedule-item[data-type=":55"], .upcoming-item[data-type=":55"] {
+    border-left-color: #2563eb;
+}
+.schedule-item[data-type="hour"], .upcoming-item[data-type="hour"] {
+    border-left-color: #7c3aed;
+}
+.schedule-item[data-type="rules"], .upcoming-item[data-type="rules"] {
+    border-left-color: #059669;
+}
+.schedule-item[data-type="ad"], .upcoming-item[data-type="ad"] {
+    border-left-color: #d97706;
+}
+
+/* Custom Announcement Types */
+.custom-type-input-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.custom-type-item .name {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 1rem;
+    flex: 1 1 150px;
+    word-break: break-word;
+}
+
+.custom-type-item .template {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    flex: 2 1 300px;
+    word-break: break-word;
+}
+
+/* Status Messages */
+.status-message {
+    margin-left: var(--space-3);
+    font-size: 1rem;
+    color: var(--text-secondary);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.status-message.error {
+    color: var(--danger);
+}
+
+.status-message.success {
+    color: var(--success);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.loading-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--text);
+    border-radius: 50%;
+    border-top-color: var(--primary);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Flash Messages */
+.alert {
+    padding: var(--space-3);
+    margin-bottom: var(--space-4);
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.alert-success {
+    background-color: var(--success);
+    color: white;
+}
+
+.alert-danger {
+    background-color: var(--danger);
+    color: white;
+}
+
+.alert-warning {
+    background-color: var(--warning);
+    color: white;
+}
+
+/* Responsive Styles */
+@media (max-width: 1024px) {
+    .header h1 {
+        font-size: 2rem;
+    }
+
+    .clock {
+        font-size: 1.25rem;
+    }
+
+    .card h2 {
+        font-size: 1.3rem;
+    }
+
+    .schedule-item .time, .upcoming-item .time {
+        min-width: 80px;
+        font-size: 0.95rem;
+    }
+
+    .custom-type-item .name, .custom-type-item .template {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: var(--space-2);
+    }
+
+    .container {
+        padding: var(--space-2);
+    }
+
+    .header h1 {
+        font-size: 1.75rem;
+    }
+
+    .clock {
+        font-size: 1.1rem;
+    }
+
+    .card h2 {
+        font-size: 1.2rem;
+    }
+
+    .time-input-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn {
+        padding: var(--space-2) var(--space-3);
+        font-size: 0.95rem;
+    }
+
+    .form-control {
+        font-size: 0.95rem;
+        padding: var(--space-2);
+    }
+
+    .schedule-item .actions,
+    .custom-type-item .actions {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: var(--space-2);
+    }
+}
+
+@media (max-width: 480px) {
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .header h1 {
+        font-size: 1.5rem;
+    }
+
+    .clock {
+        font-size: 0.9rem;
+    }
+
+    .card,
+    .form-group,
+    .time-input-row,
+    .schedule-item,
+    .upcoming-item,
+    .custom-type-item {
+        padding: var(--space-2);
+    }
+
+    .btn {
+        font-size: 0.9rem;
+        padding: var(--space-1) var(--space-2);
+        width: 100%;
+        margin-top: var(--space-2);
+    }
+
+    .form-control {
+        font-size: 0.9rem;
+        padding: var(--space-1) var(--space-2);
+    }
+
+    .schedule-item, .upcoming-item, .custom-type-item {
+        padding: var(--space-1);
+        font-size: 0.85rem;
+    }
+
+    .schedule-item .time, .upcoming-item .time,
+    .schedule-item .type, .upcoming-item .type,
+    .custom-type-item .name, .custom-type-item .template {
+        font-size: 0.85rem;
+    }
+
+    .schedule-list, .custom-types-list, .upcoming-list {
+        padding: var(--space-1);
+    }
+
+    .status-message {
+        margin-left: 0;
+        margin-top: var(--space-2);
+    }
+
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border-width: 3px;
+    }
+
+    .schedule-item, .upcoming-item, .custom-type-item {
+        margin-bottom: var(--space-1);
+    }
+
+    .schedule-item:last-child, .upcoming-item:last-child, .custom-type-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .card h2 {
+        font-size: 1rem;
+    }
+
+    .custom-type-input-row {
+        gap: var(--space-2);
+    }
+
+    .custom-type-input-row .form-control {
+        font-size: 0.85rem;
+        padding: var(--space-1) var(--space-2);
+    }
+}
+
+@media (max-width: 360px) {
+    .header h1 {
+        font-size: 1.25rem;
+    }
+
+    .clock {
+        font-size: 0.8rem;
+    }
+
+    .card h2 {
+        font-size: 0.95rem;
+    }
+
+    .form-group {
+        margin-bottom: var(--space-3);
+    }
+
+    .btn {
+        font-size: 0.85rem;
+        padding: var(--space-1);
+    }
+
+    .schedule-item .time, .upcoming-item .time {
+        min-width: 60px;
+        font-size: 0.8rem;
+    }
+
+    .schedule-item .type, .upcoming-item .type {
+        font-size: 0.8rem;
+    }
+
+    .upcoming-item .countdown {
+        font-size: 0.75rem;
+    }

@@ -1,0 +1,1140 @@
+// UI Components and Utilities
+const UI = {
+    // Initialize UI components
+    init: function() {
+        console.log('Initializing UI components...');
+        this.setupSidebar();
+        this.setupTabs();
+        this.setupAlerts();
+        this.setupPasswordToggles();
+        this.updateClock();
+        setInterval(() => this.updateClock(), 1000);
+    },
+
+    // Sidebar toggle for mobile
+    setupSidebar: function() {
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+            });
+            
+            // Close sidebar when clicking on a link (mobile)
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 576) {
+                        sidebar.classList.remove('active');
+                    }
+                });
+            });
+// INI File Editor
+const iniEditor = {
+    currentFile: '',
+    
+    init: function() {
+        console.log('Initializing INI file editor...');
+        this.setupEventListeners();
+        
+        // Set initial value for selector based on active config
+        const activeConfig = document.getElementById('activeConfig');
+        if (activeConfig && activeConfig.textContent) {
+            const iniSelector = document.getElementById('iniFileSelector');
+            if (iniSelector) {
+                iniSelector.value = activeConfig.textContent.trim();
+            }
+        }
+    },
+    
+    setupEventListeners: function() {
+        const loadBtn = document.getElementById('loadIniBtn');
+        const saveBtn = document.getElementById('saveIniBtn');
+        
+        if (loadBtn) {
+            loadBtn.addEventListener('click', () => this.loadIniFile());
+            console.log('Load INI button listener added');
+        }
+        
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => this.saveIniFile());
+            console.log('Save INI button listener added');
+        }
+    },
+    
+    loadIniFile: async function() {
+        const selector = document.getElementById('iniFileSelector');
+        const contentArea = document.getElementById('iniContent');
+        const statusMsg = document.getElementById('loadIniStatus');
+        const fileDisplay = document.getElementById('currentIniFile');
+        
+        if (!selector || !contentArea || !statusMsg) {
+            Utils.showNotification('INI editor elements not found', 'error');
+            return;
+        }
+        
+        const fileName = selector.value;
+        if (!fileName) {
+            statusMsg.textContent = 'Please select a file';
+            statusMsg.className = 'status-message error';
+            return;
+        }
+        
+        UI.showLoading();
+        try {
+            const response = await fetch(`/get_ini_content?file=${fileName}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            contentArea.value = data.content;
+            this.currentFile = fileName;
+            
+            statusMsg.textContent = `File loaded successfully`;
+            statusMsg.className = 'status-message success';
+            
+            if (fileDisplay) {
+                fileDisplay.textContent = fileName;
+            }
+            
+            Utils.showNotification(`Loaded ${fileName} successfully`, 'success');
+        } catch (error) {
+            console.error('Error loading INI file:', error);
+            statusMsg.textContent = `Error: ${error.message}`;
+            statusMsg.className = 'status-message error';
+            Utils.showNotification(error.message, 'error');
+        } finally {
+            UI.hideLoading();
+        }
+    },
+    
+    saveIniFile: async function() {
+        const contentArea = document.getElementById('iniContent');
+        const statusMsg = document.getElementById('saveIniStatus');
+        
+        if (!contentArea || !statusMsg) {
+            Utils.showNotification('INI editor elements not found', 'error');
+            return;
+        }
+        
+        if (!this.currentFile) {
+            statusMsg.textContent = 'No file loaded';
+            statusMsg.className = 'status-message error';
+            Utils.showNotification('Please load a file first', 'warning');
+            return;
+        }
+        
+        const content = contentArea.value;
+        if (!content.trim()) {
+            statusMsg.textContent = 'Content cannot be empty';
+            statusMsg.className = 'status-message error';
+            Utils.showNotification('INI file content cannot be empty', 'warning');
+            return;
+        }
+        
+        UI.showLoading();
+        try {
+            const response = await fetch('/save_ini_content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    file: this.currentFile,
+                    content: content
+                })
+            });
+            
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to save file');
+            }
+            
+            statusMsg.textContent = 'File saved successfully';
+            statusMsg.className = 'status-message success';
+            Utils.showNotification(`Saved ${this.currentFile} successfully`, 'success');
+            
+            // If we're saving the currently active configuration, refresh the state
+            const activeConfig = document.getElementById('activeConfig');
+            if (activeConfig && activeConfig.textContent.trim() === this.currentFile) {
+                await refreshState();
+            }
+        } catch (error) {
+            console.error('Error saving INI file:', error);
+            statusMsg.textContent = `Error: ${error.message}`;
+            statusMsg.className = 'status-message error';
+            Utils.showNotification(error.message, 'error');
+        } finally {
+            UI.hideLoading();
+        }
+    }
+};
+
+// Fix for the Switch Config button
+function fixSwitchConfigButton() {
+    const switchConfigBtn = document.getElementById('switchConfigBtn');
+    if (switchConfigBtn) {
+        // Remove any existing listeners
+        const newBtn = switchConfigBtn.cloneNode(true);
+        switchConfigBtn.parentNode.replaceChild(newBtn, switchConfigBtn);
+        
+        // Add the correct event listener
+        newBtn.addEventListener('click', async function() {
+            const configSelector = document.getElementById('configSelector');
+            if (!configSelector) {
+                Utils.showNotification('Config selector not found', 'error');
+                return;
+            }
+            
+            const selectedConfig = configSelector.value;
+            if (!selectedConfig) {
+                Utils.showNotification('Please select a configuration file', 'warning');
+                return;
+            }
+            
+            UI.showLoading();
+            try {
+                const response = await fetch('/switch_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ config_file: selectedConfig })
+                });
+                
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to switch configuration');
+                }
+                
+                Utils.showNotification(`Successfully switched to ${selectedConfig}`, 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error switching configuration:', error);
+                Utils.showNotification(error.message, 'error');
+                UI.hideLoading();
+            }
+        });
+        
+        console.log('Switch config button fixed and new listener added');
+    }
+}
+
+// Add to document ready function
+function initializeINIEditor() {
+    if (typeof iniEditor !== 'undefined') {
+        iniEditor.init();
+        console.log('INI editor initialized');
+    }
+    
+    // Fix Switch Config button
+    fixSwitchConfigButton();
+}            
+            // Update active link based on scroll position
+            window.addEventListener('scroll', () => {
+                this.updateActiveNavItem();
+            });
+        }
+    },
+    
+    // Update active nav item based on scroll position
+    updateActiveNavItem: function() {
+        const sections = document.querySelectorAll('.content-section');
+        const navLinks = document.querySelectorAll('.nav-link');
+        
+        let currentSection = '';
+        
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop - 100;
+            const sectionHeight = section.offsetHeight;
+            const sectionId = section.getAttribute('id');
+            
+            if (window.scrollY >= sectionTop && window.scrollY < sectionTop + sectionHeight) {
+                currentSection = sectionId;
+            }
+        });
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${currentSection}`) {
+                link.classList.add('active');
+            }
+        });
+    },
+    
+    // Tabbed content
+    setupTabs: function() {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        
+        if (tabButtons.length > 0) {
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetTab = button.dataset.tab;
+                    
+                    // Deactivate all tabs
+                    document.querySelectorAll('.tab-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    document.querySelectorAll('.tab-pane').forEach(pane => {
+                        pane.classList.remove('active');
+                    });
+                    
+                    // Activate selected tab
+                    button.classList.add('active');
+                    document.getElementById(`${targetTab}-tab`).classList.add('active');
+                });
+            });
+        }
+    },
+    
+    // Alert dismissal
+    setupAlerts: function() {
+        document.querySelectorAll('.alert-close').forEach(button => {
+            button.addEventListener('click', function() {
+                this.closest('.alert').remove();
+            });
+        });
+        
+        // Auto dismiss after 5 seconds
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(alert => {
+                alert.style.opacity = '0';
+                setTimeout(() => {
+                    alert.remove();
+                }, 300);
+            });
+        }, 5000);
+    },
+    
+    // Password visibility toggle
+    setupPasswordToggles: function() {
+        document.querySelectorAll('.password-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const passwordInput = this.previousElementSibling;
+                const icon = this.querySelector('i');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        });
+    },
+    
+    // Update clock display
+    updateClock: function() {
+        const clockElement = document.getElementById('clock');
+        if (!clockElement) return;
+        
+        const now = new Date();
+        let hours = now.getHours();
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        
+        clockElement.textContent = `${hours}:${minutes}:${seconds} ${ampm}`;
+    },
+    
+    // Loading overlay
+    showLoading: function() {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+            overlay.classList.add('active');
+        }
+    },
+    
+    hideLoading: function() {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
+    }
+};
+
+// Utility Functions
+const Utils = {
+    formatTime: function(time) {
+        const [hours, minutes] = time.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    },
+    
+    formatMinutes: function(minutes) {
+        return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    },
+    
+    showNotification: function(message, type = 'info') {
+        const flashContainer = document.querySelector('.flash-container');
+        if (!flashContainer) return;
+        
+        const alertHtml = `
+            <div class="alert alert-${type}">
+                <i class="fa-solid ${this.getIconForType(type)}"></i>
+                ${message}
+                <button class="alert-close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        `;
+        
+        flashContainer.insertAdjacentHTML('beforeend', alertHtml);
+        
+        // Setup close button
+        const newAlert = flashContainer.lastElementChild;
+        newAlert.querySelector('.alert-close').addEventListener('click', function() {
+            newAlert.remove();
+        });
+        
+        // Auto dismiss
+        setTimeout(() => {
+            newAlert.style.opacity = '0';
+            setTimeout(() => {
+                newAlert.remove();
+            }, 300);
+        }, 5000);
+    },
+    
+    getIconForType: function(type) {
+        switch(type) {
+            case 'success': return 'fa-circle-check';
+            case 'error': return 'fa-circle-exclamation';
+            case 'warning': return 'fa-triangle-exclamation';
+            default: return 'fa-circle-info';
+        }
+    }
+};
+
+// Schedule Editor
+const scheduleEditor = {
+    times: new Map(),
+
+    init: function() {
+        console.log('Initializing schedule editor...');
+        this.setupEventListeners();
+        this.updateScheduleList();
+    },
+
+    setupEventListeners: function() {
+        const addTimeBtn = document.getElementById('addTimeBtn');
+        
+        if (addTimeBtn) {
+            addTimeBtn.addEventListener('click', () => this.addTime());
+        }
+    },
+
+    addTime: async function() {
+        const timeInput = document.getElementById('newTime');
+        const typeSelect = document.getElementById('newType');
+
+        if (!timeInput || !typeSelect) {
+            Utils.showNotification('Time input or type select not found', 'error');
+            return;
+        }
+
+        const time = timeInput.value;
+        const type = typeSelect.value;
+
+        if (!time || !type) {
+            Utils.showNotification('Please select both time and announcement type', 'warning');
+            return;
+        }
+
+        UI.showLoading();
+        try {
+            const response = await fetch('/add_time', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ time, type })
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to add time');
+            }
+
+            Utils.showNotification('Time added successfully', 'success');
+            await refreshState();
+        } catch (error) {
+            console.error('Error adding time:', error);
+            Utils.showNotification(error.message, 'error');
+        } finally {
+            UI.hideLoading();
+        }
+    },
+
+    deleteTime: async function(time) {
+        if (!confirm(`Are you sure you want to delete the ${time} announcement?`)) {
+            return;
+        }
+
+        UI.showLoading();
+        try {
+            const response = await fetch('/delete_time', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ time })
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to delete time');
+            }
+
+            Utils.showNotification('Time deleted successfully', 'success');
+            await refreshState();
+        } catch (error) {
+            console.error('Error deleting time:', error);
+            Utils.showNotification(error.message, 'error');
+        } finally {
+            UI.hideLoading();
+        }
+    },
+
+    updateScheduleList: function() {
+        const scheduleList = document.getElementById('scheduleList');
+        const timesTextarea = document.getElementById('times');
+        
+        if (!scheduleList || !timesTextarea) {
+            console.error('Schedule list or times textarea not found');
+            return;
+        }
+
+        const timeEntries = [...this.times.entries()].sort();
+        let html = '';
+
+        if (timeEntries.length === 0) {
+            html = '<div class="schedule-item"><span class="type">No announcements scheduled</span></div>';
+        } else {
+            timeEntries.forEach(([time, type]) => {
+                const typeLabel = type.startsWith('custom:')
+                    ? `Custom: ${type.replace('custom:', '')}`
+                    : {
+                        ':55': 'Color Warning',
+                        'hour': 'Hour Change',
+                        'rules': 'Rules',
+                        'ad': 'Advertisement'
+                    }[type] || type;
+
+                html += `
+                    <div class="schedule-item" data-type="${type}">
+                        <span class="time">${Utils.formatTime(time)}</span>
+                        <span class="type">${typeLabel}</span>
+                        <div class="actions">
+                            <button type="button" class="btn-delete" onclick="scheduleEditor.deleteTime('${time}')">
+                                <i class="fa-solid fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        scheduleList.innerHTML = html;
+        timesTextarea.value = timeEntries.map(([time, type]) => `${time} = ${type}`).join('\n');
+    }
+};
+
+// Custom Announcement Types
+const customTypes = {
+    types: new Map(),
+
+    init: function() {
+        console.log('Initializing custom types...');
+        this.setupEventListeners();
+        this.updateTypesList();
+        this.updateTypeDropdown();
+    },
+
+    setupEventListeners: function() {
+        const addTypeBtn = document.getElementById('addTypeBtn');
+        
+        if (addTypeBtn) {
+            addTypeBtn.addEventListener('click', () => this.addType());
+        }
+    },
+
+    addType: async function() {
+        const nameInput = document.getElementById('newTypeName');
+        const templateInput = document.getElementById('newTypeTemplate');
+
+        if (!nameInput || !templateInput) {
+            Utils.showNotification('Name input or template input not found', 'error');
+            return;
+        }
+
+        const name = nameInput.value.trim();
+        const template = templateInput.value.trim();
+
+        if (!name || !template) {
+            Utils.showNotification('Please enter both name and template', 'warning');
+            return;
+        }
+
+        UI.showLoading();
+        try {
+            const response = await fetch('/add_custom_type', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, template })
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to add custom type');
+            }
+
+            // Clear inputs and update lists
+            nameInput.value = '';
+            templateInput.value = '';
+            Utils.showNotification('Custom type added successfully', 'success');
+            await refreshState();
+        } catch (error) {
+            console.error('Error adding custom type:', error);
+            Utils.showNotification(error.message, 'error');
+        } finally {
+            UI.hideLoading();
+        }
+    },
+
+    updateTypesList: function() {
+        const typesList = document.getElementById('customTypesList');
+        const typesTextarea = document.getElementById('customTypes');
+        
+        if (!typesList || !typesTextarea) {
+            console.error('Types list or types textarea not found');
+            return;
+        }
+
+        let html = '';
+
+        if (this.types.size === 0) {
+            html = '<div class="custom-type-item"><span class="type">No custom types defined</span></div>';
+        } else {
+            this.types.forEach((template, name) => {
+                html += `
+                    <div class="custom-type-item">
+                        <span class="name">${name}</span>
+                        <span class="template">${template}</span>
+                    </div>
+                `;
+            });
+        }
+
+        typesList.innerHTML = html;
+        typesTextarea.value = [...this.types.entries()].map(([name, template]) => `${name} = ${template}`).join('\n');
+    },
+
+    updateTypeDropdown: function() {
+        const typeSelect = document.getElementById('newType');
+        
+        if (!typeSelect) {
+            console.error('Type select not found');
+            return;
+        }
+
+        // Keep existing built-in options
+        const builtInOptions = Array.from(typeSelect.options)
+            .filter(option => !option.value.startsWith('custom:'));
+
+        // Clear dropdown and add built-in options back
+        typeSelect.innerHTML = '';
+        builtInOptions.forEach(option => typeSelect.add(option));
+
+        // Add custom types
+        this.types.forEach((_, name) => {
+            const option = new Option(`Custom: ${name}`, `custom:${name}`);
+            typeSelect.add(option);
+        });
+    }
+};
+
+// Day Configuration Manager
+const dayConfigManager = {
+    init: function() {
+        console.log('Initializing day configuration manager...');
+        this.setupEventListeners();
+        this.updateDayConfigInfo();
+    },
+    
+    setupEventListeners: function() {
+        const switchConfigBtn = document.getElementById('switchConfigBtn');
+        const copyConfigBtn = document.getElementById('copyConfigBtn');
+        
+        if (switchConfigBtn) {
+            switchConfigBtn.addEventListener('click', () => this.switchConfig());
+        }
+        
+        if (copyConfigBtn) {
+            copyConfigBtn.addEventListener('click', () => this.copyConfig());
+        }
+    },
+    
+    updateDayConfigInfo: async function() {
+        const currentDayElement = document.getElementById('currentDay');
+        const activeConfigElement = document.getElementById('activeConfig');
+        const configStatusElement = document.getElementById('configStatus');
+        
+        if (!currentDayElement || !activeConfigElement || !configStatusElement) {
+            console.error('Day config info elements not found');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/get_day_configs');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.current_day) {
+                const dayInfo = data.current_day;
+                currentDayElement.textContent = dayInfo.day_name;
+                activeConfigElement.textContent = dayInfo.config_file;
+                
+                // Set status
+                if (dayInfo.is_operating_day) {
+                    configStatusElement.textContent = 'Operating Day';
+                    configStatusElement.className = 'status-active';
+                } else {
+                    configStatusElement.textContent = 'Non-Operating Day';
+                    configStatusElement.className = 'status-inactive';
+                }
+                
+                // Update dropdown
+                const configSelector = document.getElementById('configSelector');
+                if (configSelector) {
+                    configSelector.value = dayInfo.config_file;
+                }
+            }
+            
+            // Update config file statuses
+            this.updateConfigFileStatus(data.configs);
+            
+        } catch (error) {
+            console.error('Error loading day configuration info:', error);
+            currentDayElement.textContent = 'Error loading';
+            activeConfigElement.textContent = 'Error loading';
+            configStatusElement.textContent = 'Error';
+            configStatusElement.className = 'status-error';
+        }
+    },
+    
+    updateConfigFileStatus: function(configs) {
+        if (!configs) return;
+        
+        // Update "From" selector to show only existing configs
+        const copyFromSelector = document.getElementById('copyFromSelector');
+        if (copyFromSelector) {
+            Array.from(copyFromSelector.options).forEach(option => {
+                const config = configs[option.value];
+                option.disabled = !(config && config.exists);
+                if (!option.textContent.includes('✓') && !option.textContent.includes('✗')) {
+                    option.textContent = `${option.value.replace('.ini', '')} ${config && config.exists ? '✓' : '✗'}`;
+                }
+            });
+        }
+    },
+    
+    switchConfig: async function() {
+        const configSelector = document.getElementById('configSelector');
+        if (!configSelector) {
+            Utils.showNotification('Config selector not found', 'error');
+            return;
+        }
+        
+        const selectedConfig = configSelector.value;
+        if (!selectedConfig) {
+            Utils.showNotification('Please select a configuration file', 'warning');
+            return;
+        }
+        
+        UI.showLoading();
+        try {
+            const response = await fetch('/switch_config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ config_file: selectedConfig })
+            });
+            
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to switch configuration');
+            }
+            
+            Utils.showNotification(`Successfully switched to ${selectedConfig}`, 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Error switching configuration:', error);
+            Utils.showNotification(error.message, 'error');
+            UI.hideLoading();
+        }
+    },
+    
+    copyConfig: async function() {
+        const copyFromSelector = document.getElementById('copyFromSelector');
+        const copyToSelector = document.getElementById('copyToSelector');
+        const copyStatus = document.getElementById('copyStatus');
+        
+        if (!copyFromSelector || !copyToSelector) {
+            Utils.showNotification('Copy selectors not found', 'error');
+            return;
+        }
+        
+        const source = copyFromSelector.value;
+        const target = copyToSelector.value;
+        
+        if (source === target) {
+            if (copyStatus) {
+                copyStatus.textContent = 'Source and target cannot be the same';
+                copyStatus.className = 'status-message error';
+            }
+            Utils.showNotification('Source and target cannot be the same', 'warning');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to copy ${source} to ${target}? This will overwrite the target configuration.`)) {
+            return;
+        }
+        
+        UI.showLoading();
+        try {
+            const response = await fetch('/copy_day_config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source, target })
+            });
+            
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to copy configuration');
+            }
+            
+            if (copyStatus) {
+                copyStatus.textContent = `Successfully copied ${source} to ${target}`;
+                copyStatus.className = 'status-message success';
+            }
+            
+            Utils.showNotification(`Successfully copied ${source} to ${target}`, 'success');
+            await this.updateDayConfigInfo();
+            
+        } catch (error) {
+            console.error('Error copying configuration:', error);
+            if (copyStatus) {
+                copyStatus.textContent = `Error: ${error.message}`;
+                copyStatus.className = 'status-message error';
+            }
+            Utils.showNotification(error.message, 'error');
+        } finally {
+            UI.hideLoading();
+        }
+    }
+};
+
+// Update upcoming announcements
+function updateUpcomingAnnouncements(colorData = null) {
+    console.log('Updating upcoming announcements...');
+    const container = document.getElementById('upcomingList');
+    
+    if (!container) {
+        console.error('Upcoming list container not found');
+        return;
+    }
+
+    const timesTextarea = document.getElementById('times');
+    
+    if (!timesTextarea) {
+        console.error('Times textarea not found');
+        return;
+    }
+
+    const now = new Date();
+    const lines = timesTextarea.value.trim().split('\n');
+    container.innerHTML = '';
+
+    const typeLabels = {
+        ':55': 'Color Warning',
+        'hour': 'Hour Change',
+        'rules': 'Rules',
+        'ad': 'Advertisement'
+    };
+
+    const upcoming = lines
+        .filter(line => line.trim())
+        .map(line => {
+            const [timeStr, type] = line.split('=').map(part => part.trim());
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const scheduleTime = new Date(now);
+            scheduleTime.setHours(hours, minutes, 0, 0);
+
+            if (scheduleTime < now) {
+                scheduleTime.setDate(scheduleTime.getDate() + 1);
+            }
+
+            const minutesUntil = Math.round((scheduleTime - now) / 1000 / 60);
+
+            if (minutesUntil <= 60) {
+                return {
+                    time: timeStr,
+                    type,
+                    minutesUntil,
+                    scheduleTime
+                };
+            }
+            return null;
+        })
+        .filter(item => item !== null)
+        .sort((a, b) => a.scheduleTime - b.scheduleTime);
+
+    if (upcoming.length === 0) {
+        container.innerHTML = '<div class="upcoming-item empty"><span class="type">No announcements scheduled for the next hour</span></div>';
+        return;
+    }
+
+    upcoming.forEach(({ time, type, minutesUntil }) => {
+        const typeLabel = type.startsWith('custom:')
+            ? `Custom: ${type.replace('custom:', '')}`
+            : typeLabels[type] || type;
+
+        let colorInfo = '';
+        if (colorData && (type === ':55' || type === 'hour')) {
+            const colorKey = type === ':55' ? 'color3' : 'color4';
+            if (colorData[colorKey] && colorData[colorKey].color) {
+                colorInfo = ` (${colorData[colorKey].color})`;
+            }
+        }
+
+        const itemHtml = `
+            <div class="upcoming-item" data-type="${type}">
+                <span class="time">${Utils.formatTime(time)}</span>
+                <span class="type">${typeLabel}${colorInfo}</span>
+                <span class="countdown">in ${Utils.formatMinutes(minutesUntil)}</span>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', itemHtml);
+    });
+}
+
+// Initialize instant announcement functionality
+function setupInstantAnnouncement() {
+    console.log('Setting up instant announcement...');
+    const instantText = document.getElementById('instantText');
+    const playInstantBtn = document.getElementById('playInstantBtn');
+    const instantStatus = document.getElementById('instantStatus');
+
+    if (!instantText || !playInstantBtn || !instantStatus) {
+        console.error('Missing instant announcement elements');
+        return;
+    }
+
+    playInstantBtn.addEventListener('click', async () => {
+        const text = instantText.value.trim();
+        
+        if (!text) {
+            instantStatus.textContent = 'Please enter announcement text';
+            instantStatus.className = 'status-message error';
+            Utils.showNotification('Please enter announcement text', 'warning');
+            return;
+        }
+
+        try {
+            playInstantBtn.disabled = true;
+            instantStatus.textContent = 'Playing announcement...';
+            instantStatus.className = 'status-message';
+            UI.showLoading();
+
+            const response = await fetch('/play_instant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            instantStatus.textContent = 'Announcement played successfully';
+            instantStatus.className = 'status-message success';
+            Utils.showNotification('Announcement played successfully', 'success');
+            instantText.value = '';
+        } catch (error) {
+            console.error('Error playing announcement:', error);
+            instantStatus.textContent = `Error: ${error.message}`;
+            instantStatus.className = 'status-message error';
+            Utils.showNotification(error.message, 'error');
+        } finally {
+            playInstantBtn.disabled = false;
+            UI.hideLoading();
+        }
+    });
+}
+
+// Refresh state from server
+async function refreshState() {
+    console.log('Refreshing application state...');
+    UI.showLoading();
+    
+    try {
+        const response = await fetch('/get_state');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Received state data:', data);
+
+        // Update upcoming announcements
+        updateUpcomingAnnouncements(data.color_data);
+
+        // Update custom types
+        if (data.custom_types) {
+            customTypes.types = new Map(Object.entries(data.custom_types));
+            customTypes.updateTypesList();
+            customTypes.updateTypeDropdown();
+        }
+
+        // Update schedule
+        if (data.times) {
+            scheduleEditor.times = new Map(Object.entries(data.times));
+            scheduleEditor.updateScheduleList();
+        }
+
+        // Update day configuration info if data is available
+        if (data.day_configs && typeof dayConfigManager !== 'undefined') {
+            dayConfigManager.updateDayConfigInfo();
+        }
+
+    } catch (error) {
+        console.error('Failed to refresh state:', error);
+        Utils.showNotification('Failed to refresh state: ' + error.message, 'error');
+        
+        // Update the UI to show error
+        const upcomingList = document.getElementById('upcomingList');
+        if (upcomingList) {
+            upcomingList.innerHTML = `
+                <div class="upcoming-item empty">
+                    <span class="type">Error loading announcements: ${error.message}</span>
+                </div>
+            `;
+        }
+    } finally {
+        UI.hideLoading();
+    }
+}
+
+// Document ready function
+// Document ready function - Update this in main.js
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('Initializing application...');
+    UI.showLoading();
+
+    try {
+        // Initialize UI components first
+        UI.init();
+        console.log('UI components initialized');
+        
+        // Setup instant announcement functionality
+        setupInstantAnnouncement();
+        console.log('Instant announcement setup complete');
+
+        // Fetch initial state before initializing data-dependent components
+        try {
+            const response = await fetch('/get_state');
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('Received initial state data:', data);
+
+            // Initialize data components
+            if (data.custom_types) {
+                customTypes.types = new Map(Object.entries(data.custom_types));
+            }
+            
+            if (data.times) {
+                scheduleEditor.times = new Map(Object.entries(data.times));
+            }
+
+            // Initialize components that need the data
+            customTypes.init();
+            scheduleEditor.init();
+            dayConfigManager.init();
+            
+            // Initialize INI editor
+            initializeINIEditor();
+            
+            // Update the UI with the loaded data
+            updateUpcomingAnnouncements(data.color_data);
+            
+        } catch (error) {
+            console.error('Error loading initial state:', error);
+            Utils.showNotification('Error loading initial state: ' + error.message, 'error');
+        }
+
+        // Set up form submission handler
+        const configForm = document.getElementById('configForm');
+        const saveConfigBtn = document.getElementById('saveConfigBtn');
+        
+        if (configForm && saveConfigBtn) {
+            saveConfigBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                UI.showLoading();
+
+                try {
+                    const formData = new FormData(configForm);
+                    const response = await fetch('/save_config', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to save configuration');
+                    }
+
+                    Utils.showNotification('Configuration saved successfully!', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } catch (error) {
+                    console.error('Error saving configuration:', error);
+                    Utils.showNotification('Error saving configuration: ' + error.message, 'error');
+                    UI.hideLoading();
+                }
+            });
+        }
+
+        // Set up periodic refreshes
+        setInterval(refreshState, 30000); // Every 30 seconds
+        setInterval(() => updateUpcomingAnnouncements(), 10000); // Every 10 seconds
+
+        console.log('All initialization complete');
+    } catch (error) {
+        console.error('Error during initialization:', error);
+        Utils.showNotification('Error initializing application: ' + error.message, 'error');
+    } finally {
+        UI.hideLoading();
+    }
+});

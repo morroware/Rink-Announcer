@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Announcement System Configuration</title>
+    <!-- Normalize CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Main CSS file -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1>Announcement System Configuration</h1>
+                <div id="clock" class="clock">Loading...</div>
+            </div>
+        </header>
+
+        <!-- Quick Navigation Menu -->
+        <nav class="quick-nav">
+            <ul>
+                <li><a href="#day-config">Day Configuration</a></li>
+                <li><a href="#upcoming">Upcoming Announcements</a></li>
+                <li><a href="#schedule">Schedule</a></li>
+                <li><a href="#templates">Templates</a></li>
+                <li><a href="#custom">Custom Types</a></li>
+                <li><a href="#voice">Voice</a></li>
+                <li><a href="#database">Database</a></li>
+            </ul>
+        </nav>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Day Configuration Card -->
+        <div class="card" id="day-config">
+            <h2>
+                Day-Specific Configurations
+                <span class="toggle-icon">▼</span>
+            </h2>
+            <div class="card-content">
+                <div class="day-config-info">
+                    <div class="current-day-info">
+                        <div class="info-row">
+                            <span class="label">Current Day:</span>
+                            <span class="value" id="currentDay">{{ day_configs.current_day.day_name }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Active Config:</span>
+                            <span class="value" id="activeConfig">{{ current_config }}</span>
+                        </div>
+                        <div class="info-row status-row">
+                            <span class="label">Status:</span>
+                            <span class="value{% if day_configs.current_day.is_operating_day %} status-active{% else %} status-inactive{% endif %}" id="configStatus">
+                                {% if day_configs.current_day.is_operating_day %}Operating Day{% else %}Non-Operating Day{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="day-config-actions">
+                        <h3>Switch Active Configuration</h3>
+                        <div class="config-selector">
+                            <select class="form-control" id="configSelector">
+                                <option value="thurs.ini"{% if current_config == 'thurs.ini' %} selected{% endif %}>Thursday</option>
+                                <option value="fri.ini"{% if current_config == 'fri.ini' %} selected{% endif %}>Friday</option>
+                                <option value="sat.ini"{% if current_config == 'sat.ini' %} selected{% endif %}>Saturday</option>
+                                <option value="sun.ini"{% if current_config == 'sun.ini' %} selected{% endif %}>Sunday</option>
+                                <option value="config.ini"{% if current_config == 'config.ini' %} selected{% endif %}>Default</option>
+                            </select>
+                            <button type="button" class="btn btn-primary" id="switchConfigBtn">Switch</button>
+                        </div>
+                        <div class="config-status-info">
+                            <p class="help-text">
+                                <small>Note: Switching configurations affects only the current session. 
+                                At 1:00 AM, the system will automatically switch to the appropriate day's configuration.</small>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="day-config-copy">
+                        <h3>Copy Between Configurations</h3>
+                        <div class="copy-config-form">
+                            <div class="copy-row">
+                                <div class="copy-selector">
+                                    <label class="form-label">From:</label>
+                                    <select class="form-control" id="copyFromSelector">
+                                        {% for config_file, config_info in day_configs.configs.items() %}
+                                        <option value="{{ config_file }}"{% if not config_info.exists %} disabled{% endif %}>
+                                            {{ config_file|replace('.ini', '') }}{% if config_info.exists %} ✓{% else %} ✗{% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="copy-selector">
+                                    <label class="form-label">To:</label>
+                                    <select class="form-control" id="copyToSelector">
+                                        <option value="thurs.ini">Thursday</option>
+                                        <option value="fri.ini">Friday</option>
+                                        <option value="sat.ini">Saturday</option>
+                                        <option value="sun.ini">Sunday</option>
+                                        <option value="config.ini">Default</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary" id="copyConfigBtn">Copy</button>
+                        </div>
+                        <div id="copyStatus" class="status-message"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instant Announcement Card -->
+        <div class="card" id="instant">
+            <h2>
+                Instant Announcement
+                <span class="toggle-icon">▼</span>
+            </h2>
+            <div class="card-content">
+                <div class="form-group">
+                    <label class="form-label" for="instantText">Announcement Text</label>
+                    <textarea class="form-control" id="instantText" rows="3" placeholder="Enter announcement text..."></textarea>
+                </div>
+                <button type="button" class="btn btn-primary" id="playInstantBtn">Play Announcement</button>
+                <span id="instantStatus" class="status-message"></span>
+            </div>
+        </div>
+
+        <!-- Upcoming Announcements Card -->
+        <div class="card" id="upcoming">
+            <h2>
+                Upcoming Announcements
+                <span class="toggle-icon">▼</span>
+            </h2>
+            <div class="card-content">
+                <div class="upcoming-list" id="upcomingList">
+                    <div class="upcoming-item empty">
+                        <span class="type">Loading announcements...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Configuration Form -->
+        <form id="configForm" method="POST" action="{{ url_for('save_config') }}">
+            <!-- Announcement Schedule -->
+            <div class="card" id="schedule">
+                <h2>
+                    Announcement Schedule
+                    <span class="toggle-icon">▼</span>
+                </h2>
+                <div class="card-content">
+                    <div class="schedule-editor">
+                        <div class="time-input-row">
+                            <input type="time" class="form-control time-picker" id="newTime" value="12:00">
+                            <select class="form-control type-select" id="newType">
+                                <option value=":55">Color Warning (55min)</option>
+                                <option value="hour">Color Change</option>
+                                <option value="rules">Rules</option>
+                                <option value="ad">Advertisement</option>
+                            </select>
+                            <button type="button" class="btn btn-primary" id="addTimeBtn">Add</button>
+                        </div>
+                        <div class="schedule-list" id="scheduleList"></div>
+                        <textarea class="form-control" id="times" name="times" hidden required>{{ times }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Templates -->
+            <div class="card" id="templates">
+                <h2>
+                    Announcement Templates
+                    <span class="toggle-icon">▼</span>
+                </h2>
+                <div class="card-content">
+                    <div class="form-group">
+                        <label class="form-label" for="fiftyfive_template">55-Minute Template</label>
+                        <textarea class="form-control" id="fiftyfive_template" name="fiftyfive_template" rows="3" required>{{ announcements.fiftyfive }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="hour_template">Hour Template</label>
+                        <textarea class="form-control" id="hour_template" name="hour_template" rows="3" required>{{ announcements.hour }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="rules_template">Rules Template</label>
+                        <textarea class="form-control" id="rules_template" name="rules_template" rows="3" required>{{ announcements.rules }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="ad_template">Ad Template</label>
+                        <textarea class="form-control" id="ad_template" name="ad_template" rows="3" required>{{ announcements.ad }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Announcement Types -->
+            <div class="card" id="custom">
+                <h2>
+                    Custom Announcement Types
+                    <span class="toggle-icon">▼</span>
+                </h2>
+                <div class="card-content">
+                    <div class="custom-type-editor">
+                        <div class="custom-type-input-row">
+                            <input type="text" class="form-control" id="newTypeName" placeholder="Type name (e.g., 'weather')">
+                            <textarea class="form-control" id="newTypeTemplate" placeholder="Announcement template..." rows="2"></textarea>
+                            <button type="button" class="btn btn-primary" id="addTypeBtn">Add Type</button>
+                        </div>
+                        <div id="customTypesList" class="custom-types-list"></div>
+                        <textarea id="customTypes" name="customTypes" hidden>{{ custom_types }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voice Configuration -->
+            <div class="card" id="voice">
+                <h2>
+                    Voice Configuration
+                    <span class="toggle-icon">▼</span>
+                </h2>
+                <div class="card-content">
+                    <div class="form-group">
+                        <label class="form-label" for="voice_id">Voice ID</label>
+                        <input type="text" class="form-control" id="voice_id" name="voice_id" value="{{ tts.voice_id }}" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Configuration -->
+            <div class="card" id="database">
+                <h2>
+                    Database Configuration
+                    <span class="toggle-icon">▼</span>
+                </h2>
+                <div class="card-content">
+                    <div class="form-group">
+                        <label class="form-label" for="db_server">Server</label>
+                        <input type="text" class="form-control" id="db_server" name="db_server" value="{{ database.server }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="db_name">Database Name</label>
+                        <input type="text" class="form-control" id="db_name" name="db_name" value="{{ database.database }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="db_username">Username</label>
+                        <input type="text" class="form-control" id="db_username" name="db_username" value="{{ database.username }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="db_password">Password</label>
+                        <input type="password" class="form-control" id="db_password" name="db_password" value="{{ database.password }}" required>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Configuration</button>
+        </form>
+    </div>
+
+    <!-- Main JS file -->
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>
